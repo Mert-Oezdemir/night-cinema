@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Night Cinema</title>
+<style>
+  :root { color-scheme:dark; --base:#211833; --ink:#fcf3dc; --light:#e4c5ee; --line:#786988; --green:#e5e7a4; --dark:#37274d }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--base); color:var(--ink); font:1rem/1.55 'Trebuchet MS',sans-serif }
+  h1,h2,p { margin:0 }
+  .cinema { width:min(76rem, calc(100% - 2rem)); margin:0 auto 4rem }
+  header { display:flex; gap:.75rem; align-items:center; justify-content:space-between; flex-wrap:wrap; padding:1rem 0; border-bottom:1px solid var(--line) }
+  .marquee { padding:clamp(2.5rem,9vw,6rem) 0 2rem; text-align:center }
+  h1 { color:var(--green); font:700 clamp(3rem,12vw,9rem)/.9 Georgia,serif; letter-spacing:-.088em; text-shadow:2px 4px 0 #604668 }
+  .marquee p { margin:.8rem auto 0; max-width:44ch }
+  .controls { display:flex; flex-wrap:wrap; gap:.75rem; padding:1rem 0; align-items:end; border-block:1px solid var(--line) }
+  label { display:grid; gap:.3rem; min-width:0 }
+  label:first-child { flex:2 1 14rem }
+  label:nth-child(2) { flex:1 1 9rem }
+  input,select,button { min-width:0; min-height:44px; border:1px solid #a397b6; border-radius:3px; background:var(--dark); color:var(--ink); font:inherit; padding:.45rem .65rem }
+  button { cursor:pointer }
+  button:hover, button[aria-pressed="true"] { background:var(--green); color:var(--base) }
+  button[aria-pressed="true"]:hover { background:var(--light) }
+  :focus-visible { outline:3px solid #ffd17e; outline-offset:3px }
+  #result-count { padding:.75rem 0; color:var(--light) }
+  #films { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1.3rem; padding:0; list-style:none; margin:0 }
+  .film { display:flex; flex-direction:column; align-items:stretch; min-width:0 }
+  .poster { aspect-ratio:5 / 3; position:relative; overflow:hidden; margin-bottom:.7rem; border:1px solid var(--line); background:var(--sky); color:var(--shape) }
+  .poster::before,.poster::after { content:''; position:absolute; display:block }
+  .poster.signal::before { width:64%; aspect-ratio:1; border:1px solid; border-radius:50%; top:18%; left:18%; box-shadow:0 0 0 14px #ffffff20, 0 0 0 28px #ffffff15, 0 0 0 42px #ffffff10 }
+  .poster.signal::after { left:49%; bottom:0; width:2px; height:83%; background:currentColor; transform:rotate(22deg); transform-origin:bottom }
+  .poster.fern::before { width:72%; height:105%; border:2px solid; transform:rotate(-23deg); left:13%; bottom:-50%; border-radius:54% 54% 0 0; box-shadow:0 0 0 10px #ffffff25,0 0 0 20px #ffffff10 }
+  .poster.fern::after { width:36%; aspect-ratio:1; border-radius:50%; background:currentColor; top:13%; right:12% }
+  .poster.clock::before { width:65%; aspect-ratio:1; top:6%; left:17%; border:10px double; border-radius:50% }
+  .poster.clock::after { top:15%; left:50%; width:13%; height:28%; border-left:5px solid; border-bottom:5px solid; rotate:-19deg }
+  .poster.moon::before { width:42%; aspect-ratio:1; background:currentColor; border-radius:50%; top:8%; left:20%; box-shadow:18px 5px 0 #ffffff20 }
+  .poster.moon::after { left:-10%; bottom:-40%; width:125%; height:65%; border-radius:50%; background:#2b2f46; rotate:-10deg }
+  .poster.filmstrip::before { width:130%; height:42%; background:currentColor; left:-15%; top:23%; border-block:8px dotted var(--sky); rotate:14deg }
+  .poster.filmstrip::after { top:10%; left:45%; width:27%; height:77%; border:2px solid; rotate:14deg }
+  .poster.canal::before { left:0; right:0; top:46%; bottom:0; background:repeating-linear-gradient(168deg,transparent 0 10px,currentColor 11px 12px) }
+  .poster.canal::after { width:37%; aspect-ratio:1; border:1px solid; top:12%; right:12%; border-radius:50%; background:var(--sky) }
+  .film h2 { font:700 1.55rem/1.2 Georgia,serif; letter-spacing:-.02em }
+  .meta { color:var(--light); margin:.2rem 0 .3rem }
+  .synopsis { margin-bottom:.7rem }
+  .film button { margin-top:auto; align-self:start }
+  @media (max-width:800px) { #films { grid-template-columns:repeat(2,minmax(0,1fr)) } }
+  @media (max-width:490px) { #films { grid-template-columns:1fr } }
+</style>
+<div class="cinema">
+  <header><strong>Night Cinema</strong><span id="watch-count">Watchlist (0)</span></header>
+  <main>
+    <div class="marquee"><h1>The late show</h1><p>Find an imaginary film for tonight and keep the rest on your watchlist.</p></div>
+    <div class="controls" role="search" aria-label="Filter the film catalogue">
+      <label for="search">Find a film<input id="search" type="search" placeholder="Title or story"></label>
+      <label for="genre">Genre<select id="genre"><option value="">All genres</option></select></label>
+      <button type="button" id="saved-only" aria-pressed="false">Watchlist only</button>
+    </div>
+    <p id="result-count" role="status"></p>
+    <ul id="films" aria-label="Films"></ul>
+  </main>
+</div>
+<script>
+  'use strict';
+  const catalog = [
+    { id:'relay', title:'Antenna at Dawn', year:2032, genre:'Science fiction', minutes:98, art:'signal', sky:'#68477b', shape:'#e5e7a4', summary:'A radio caretaker starts receiving weather reports from a town nobody can find.' },
+    { id:'fern', title:'Under the Fern Line', year:2027, genre:'Drama', minutes:107, art:'fern', sky:'#355f55', shape:'#c8e78c', summary:'Two siblings follow their late father’s trail markers through a forest reclaiming its roads.' },
+    { id:'clock', title:'Five Minutes to Thimble', year:2028, genre:'Comedy', minutes:84, art:'clock', sky:'#82506f', shape:'#ffe09a', summary:'A watch repairer agrees to keep an entire station on time during its busiest afternoon.' },
+    { id:'moon', title:'The Moon Takes a Ferry', year:2030, genre:'Science fiction', minutes:113, art:'moon', sky:'#45668a', shape:'#f5dab4', summary:'A retired pilot follows an impossible passenger across a midnight river.' },
+    { id:'strip', title:'End Credits for Elise', year:2029, genre:'Drama', minutes:92, art:'filmstrip', sky:'#694752', shape:'#e8bbcf', summary:'An archivist splices together a hometown cinema’s last reel as the building changes hands.' },
+    { id:'canal', title:'Somebody Moved the Canal', year:2026, genre:'Comedy', minutes:89, art:'canal', sky:'#3b566b', shape:'#f5aeb7', summary:'A wedding planner and a ferryman disagree about where the town used to end.' }
+  ];
+  const search = document.getElementById('search');
+  const genre = document.getElementById('genre');
+  const savedOnly = document.getElementById('saved-only');
+  const films = document.getElementById('films');
+  const watchCount = document.getElementById('watch-count');
+  const resultCount = document.getElementById('result-count');
+  const watchlist = new Set();
+  try {
+    const saved = JSON.parse(localStorage.getItem('night-cinema-v1') || '[]');
+    if (Array.isArray(saved)) {
+      for (const film of catalog) if (saved.includes(film.id)) watchlist.add(film.id);
+    }
+  } catch {}
+  for (const value of [...new Set(catalog.map(film => film.genre))].sort()) genre.add(new Option(value));
+
+  function render() {
+    const term = search.value.trim().toLowerCase();
+    const watchlistOnly = savedOnly.getAttribute('aria-pressed') === 'true';
+    const shown = catalog.filter(film => {
+      const matchesText = `${film.title} ${film.summary}`.toLowerCase().includes(term);
+      return matchesText && (!genre.value || film.genre === genre.value) && (!watchlistOnly || watchlist.has(film.id));
+    });
+    watchCount.textContent = `Watchlist (${watchlist.size})`;
+    resultCount.textContent = shown.length ? `${shown.length} ${shown.length === 1 ? 'film' : 'films'} found.` : 'No films match. Try clearing a filter.';
+    if (watchlistOnly && !watchlist.size) resultCount.textContent = 'Your watchlist is empty. Turn off Watchlist only to browse the catalogue.';
+    films.innerHTML = shown.map(film => {
+      const saved = watchlist.has(film.id);
+      return `<li class="film"><div class="poster ${film.art}" style="--sky:${film.sky};--shape:${film.shape}" aria-hidden="true"></div>
+        <h2>${film.title}</h2><p class="meta">${film.genre} / ${film.year} / ${film.minutes} min</p><p class="synopsis">${film.summary}</p>
+        <button type="button" data-film="${film.id}" aria-label="Watchlist for ${film.title}" aria-pressed="${saved}">${saved ? 'Saved to watchlist' : 'Add to watchlist'}</button></li>`;
+    }).join('');
+  }
+
+  search.addEventListener('input', render);
+  genre.addEventListener('change', render);
+  savedOnly.addEventListener('click', () => {
+    savedOnly.setAttribute('aria-pressed', String(savedOnly.getAttribute('aria-pressed') !== 'true'));
+    render();
+  });
+  films.addEventListener('click', event => {
+    const button = event.target.closest('button[data-film]');
+    if (!button) return;
+    const { film } = button.dataset;
+    if (!watchlist.delete(film)) watchlist.add(film);
+    try { localStorage.setItem('night-cinema-v1', JSON.stringify([...watchlist])); } catch {}
+    render();
+    const next = films.querySelector(`button[data-film="${film}"]`) || films.querySelector('button') || savedOnly;
+    next.focus({ preventScroll:true });
+  });
+  render();
+</script>
+</html>
