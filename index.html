@@ -49,75 +49,19 @@
 <div class="cinema">
   <header><strong>Night Cinema</strong><span id="watch-count">Watchlist (0)</span></header>
   <main>
-    <div class="marquee"><h1>The late show</h1><p>Find an imaginary film for tonight and keep the rest on your watchlist.</p></div>
+    <div class="marquee"><h1>The late show</h1><p>Explore the sample collection or search live films with your TMDB account.</p></div>
     <div class="controls" role="search" aria-label="Filter the film catalogue">
       <label for="search">Find a film<input id="search" type="search" placeholder="Title or story"></label>
       <label for="genre">Genre<select id="genre"><option value="">All genres</option></select></label>
+      <label for="source">Catalogue<select id="source"><option value="sample">Sample films</option><option value="live">Live TMDB</option></select></label>
       <button type="button" id="saved-only" aria-pressed="false">Watchlist only</button>
     </div>
     <p id="result-count" role="status"></p>
     <ul id="films" aria-label="Films"></ul>
+    <div class="controls"><button id="previous-page" type="button" hidden>Previous page</button><span id="page-info"></span><button id="next-page" type="button" hidden>Next page</button></div>
+    <p id="service-status" role="status"></p>
+    <p id="tmdb-attribution" hidden>This product uses the TMDB API but is not endorsed or certified by TMDB.</p>
   </main>
 </div>
-<script>
-  'use strict';
-  const catalog = [
-    { id:'relay', title:'Antenna at Dawn', year:2032, genre:'Science fiction', minutes:98, art:'signal', sky:'#68477b', shape:'#e5e7a4', summary:'A radio caretaker starts receiving weather reports from a town nobody can find.' },
-    { id:'fern', title:'Under the Fern Line', year:2027, genre:'Drama', minutes:107, art:'fern', sky:'#355f55', shape:'#c8e78c', summary:'Two siblings follow their late father’s trail markers through a forest reclaiming its roads.' },
-    { id:'clock', title:'Five Minutes to Thimble', year:2028, genre:'Comedy', minutes:84, art:'clock', sky:'#82506f', shape:'#ffe09a', summary:'A watch repairer agrees to keep an entire station on time during its busiest afternoon.' },
-    { id:'moon', title:'The Moon Takes a Ferry', year:2030, genre:'Science fiction', minutes:113, art:'moon', sky:'#45668a', shape:'#f5dab4', summary:'A retired pilot follows an impossible passenger across a midnight river.' },
-    { id:'strip', title:'End Credits for Elise', year:2029, genre:'Drama', minutes:92, art:'filmstrip', sky:'#694752', shape:'#e8bbcf', summary:'An archivist splices together a hometown cinema’s last reel as the building changes hands.' },
-    { id:'canal', title:'Somebody Moved the Canal', year:2026, genre:'Comedy', minutes:89, art:'canal', sky:'#3b566b', shape:'#f5aeb7', summary:'A wedding planner and a ferryman disagree about where the town used to end.' }
-  ];
-  const search = document.getElementById('search');
-  const genre = document.getElementById('genre');
-  const savedOnly = document.getElementById('saved-only');
-  const films = document.getElementById('films');
-  const watchCount = document.getElementById('watch-count');
-  const resultCount = document.getElementById('result-count');
-  const watchlist = new Set();
-  try {
-    const saved = JSON.parse(localStorage.getItem('night-cinema-v1') || '[]');
-    if (Array.isArray(saved)) {
-      for (const film of catalog) if (saved.includes(film.id)) watchlist.add(film.id);
-    }
-  } catch {}
-  for (const value of [...new Set(catalog.map(film => film.genre))].sort()) genre.add(new Option(value));
-
-  function render() {
-    const term = search.value.trim().toLowerCase();
-    const watchlistOnly = savedOnly.getAttribute('aria-pressed') === 'true';
-    const shown = catalog.filter(film => {
-      const matchesText = `${film.title} ${film.summary}`.toLowerCase().includes(term);
-      return matchesText && (!genre.value || film.genre === genre.value) && (!watchlistOnly || watchlist.has(film.id));
-    });
-    watchCount.textContent = `Watchlist (${watchlist.size})`;
-    resultCount.textContent = shown.length ? `${shown.length} ${shown.length === 1 ? 'film' : 'films'} found.` : 'No films match. Try clearing a filter.';
-    if (watchlistOnly && !watchlist.size) resultCount.textContent = 'Your watchlist is empty. Turn off Watchlist only to browse the catalogue.';
-    films.innerHTML = shown.map(film => {
-      const saved = watchlist.has(film.id);
-      return `<li class="film"><div class="poster ${film.art}" style="--sky:${film.sky};--shape:${film.shape}" aria-hidden="true"></div>
-        <h2>${film.title}</h2><p class="meta">${film.genre} / ${film.year} / ${film.minutes} min</p><p class="synopsis">${film.summary}</p>
-        <button type="button" data-film="${film.id}" aria-label="Watchlist for ${film.title}" aria-pressed="${saved}">${saved ? 'Saved to watchlist' : 'Add to watchlist'}</button></li>`;
-    }).join('');
-  }
-
-  search.addEventListener('input', render);
-  genre.addEventListener('change', render);
-  savedOnly.addEventListener('click', () => {
-    savedOnly.setAttribute('aria-pressed', String(savedOnly.getAttribute('aria-pressed') !== 'true'));
-    render();
-  });
-  films.addEventListener('click', event => {
-    const button = event.target.closest('button[data-film]');
-    if (!button) return;
-    const { film } = button.dataset;
-    if (!watchlist.delete(film)) watchlist.add(film);
-    try { localStorage.setItem('night-cinema-v1', JSON.stringify([...watchlist])); } catch {}
-    render();
-    const next = films.querySelector(`button[data-film="${film}"]`) || films.querySelector('button') || savedOnly;
-    next.focus({ preventScroll:true });
-  });
-  render();
-</script>
+<script src="app.js"></script>
 </html>
