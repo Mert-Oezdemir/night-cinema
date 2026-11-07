@@ -43,6 +43,8 @@
   .meta { color:var(--light); margin:.2rem 0 .3rem }
   .synopsis { margin-bottom:.7rem }
   .film button { margin-top:auto; align-self:start }
+  #tmdb-attribution { margin-top:2rem; padding-top:1rem; border-top:1px solid var(--line) }
+  #tmdb-attribution img { display:block; width:140px; max-width:100%; height:auto; margin:.7rem 0 }
   @media (max-width:800px) { #films { grid-template-columns:repeat(2,minmax(0,1fr)) } }
   @media (max-width:490px) { #films { grid-template-columns:1fr } }
 </style>
@@ -60,7 +62,11 @@
     <ul id="films" aria-label="Films"></ul>
     <div class="controls"><button id="previous-page" type="button" hidden>Previous page</button><span id="page-info"></span><button id="next-page" type="button" hidden>Next page</button></div>
     <p id="service-status" role="status"></p>
-    <p id="tmdb-attribution" hidden>This product uses the TMDB API but is not endorsed or certified by TMDB.</p>
+    <section id="tmdb-attribution" aria-labelledby="credits-heading" hidden>
+      <h2 id="credits-heading">Credits</h2>
+      <a href="https://www.themoviedb.org" target="_blank" rel="noopener noreferrer"><img src="tmdb-logo.svg" alt="TMDB"></a>
+      <p>This product uses the TMDB API but is not endorsed or certified by TMDB.</p>
+    </section>
   </main>
 </div>
 <script src="app.js"></script>
